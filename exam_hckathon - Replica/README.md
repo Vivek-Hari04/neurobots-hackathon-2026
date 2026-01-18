@@ -41,7 +41,7 @@ conda install numpy pandas scikit-learn joblib -y
 ### Step 3: Navigate to Project Folder
 
 ```bash
-cd path/to/exam_behavior_ai
+cd path/to/project_root
 ```
 
 ## 🚀 Running the Project
@@ -130,13 +130,17 @@ python test_model.py
 ## 📁 Project Structure
 
 ```
-exam_behavior_ai/
+/
 ├── README.md              # This file
 ├── generate_dataset.py    # Creates synthetic training data
 ├── train_model.py         # Trains the IsolationForest model
 ├── test_model.py          # Tests and evaluates the model
 ├── behavior_dataset.csv   # Generated after running generate_dataset.py
-└── behavior_model.pkl     # Generated after running train_model.py
+├── behavior_model.pkl     # Generated after running train_model.py
+├── server.py              # Simple HTTP server for the web demo
+├── index.html             # Web demo interface
+├── app.js                 # Web demo logic
+└── styles.css             # Web demo styling
 ```
 
 ## ✨ Key Features
