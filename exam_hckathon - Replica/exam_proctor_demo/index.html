@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Exam Proctor - Live Demo</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <!-- Pre-Exam Setup Screen -->
+    <div id="setup-screen" class="screen active">
+        <div class="setup-container">
+            <div class="logo-section">
+                <div class="logo">🎓</div>
+                <h1>AI Exam Proctor</h1>
+                <p class="tagline">Secure Online Examination System</p>
+            </div>
+
+            <div class="setup-card">
+                <h2>System Check</h2>
+                <div class="check-list">
+                    <div class="check-item" id="check-camera">
+                        <span class="check-icon">⏳</span>
+                        <span>Camera Access</span>
+                    </div>
+                    <div class="check-item" id="check-mic">
+                        <span class="check-icon">⏳</span>
+                        <span>Microphone Access</span>
+                    </div>
+                    <div class="check-item" id="check-fullscreen">
+                        <span class="check-icon">⏳</span>
+                        <span>Fullscreen Mode</span>
+                    </div>
+                    <div class="check-item" id="check-face">
+                        <span class="check-icon">⏳</span>
+                        <span>Face Detection</span>
+                    </div>
+                </div>
+
+                <div class="camera-preview-container">
+                    <video id="preview-video" autoplay playsinline></video>
+                    <canvas id="preview-canvas"></canvas>
+                    <div class="face-status" id="face-status">Position your face in frame</div>
+                </div>
+
+                <div class="student-info">
+                    <input type="text" id="student-name" placeholder="Enter your name" required>
+                    <input type="text" id="student-id" placeholder="Enter your Student ID" required>
+                </div>
+
+                <button id="start-exam-btn" class="primary-btn" disabled>
+                    <span>🚀</span> Start Exam
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Exam Screen -->
+    <div id="exam-screen" class="screen">
+        <div class="exam-container">
+            <!-- Header -->
+            <header class="exam-header">
+                <div class="header-left">
+                    <span class="exam-title">📝 AI Proctored Examination</span>
+                    <span class="student-display" id="student-display"></span>
+                </div>
+                <div class="header-center">
+                    <div class="timer" id="timer">
+                        <span class="timer-icon">⏱️</span>
+                        <span id="time-display">30:00</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="warning-counter" id="warning-counter">
+                        <span class="warning-icon">⚠️</span>
+                        <span>Warnings: <strong id="warning-count">0</strong>/5</span>
+                    </div>
+                    <button id="submit-exam-btn" class="submit-btn">Submit Exam</button>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <div class="exam-main">
+                <!-- Proctoring Sidebar -->
+                <aside class="proctor-sidebar">
+                    <div class="webcam-container">
+                        <video id="exam-video" autoplay playsinline muted></video>
+                        <canvas id="exam-canvas"></canvas>
+                        <div class="gaze-indicator" id="gaze-indicator">
+                            <div class="gaze-dot"></div>
+                        </div>
+                        <div class="proctoring-status" id="proctoring-status">
+                            <span class="status-dot active"></span>
+                            Monitoring Active
+                        </div>
+                    </div>
+
+                    <div class="behavior-stats">
+                        <h3>📊 Behavior Analytics</h3>
+                        <div class="stat-item">
+                            <span class="stat-label">Tab Switches</span>
+                            <span class="stat-value" id="stat-tabs">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Focus Lost</span>
+                            <span class="stat-value" id="stat-focus">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Paste Events</span>
+                            <span class="stat-value" id="stat-paste">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Gaze Away</span>
+                            <span class="stat-value" id="stat-gaze">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Typing Bursts</span>
+                            <span class="stat-value" id="stat-bursts">0</span>
+                        </div>
+                    </div>
+
+                    <div class="audio-monitor">
+                        <h3>🎤 Audio Monitor</h3>
+                        <div class="audio-visualizer" id="audio-visualizer">
+                            <div class="audio-bar"></div>
+                            <div class="audio-bar"></div>
+                            <div class="audio-bar"></div>
+                            <div class="audio-bar"></div>
+                            <div class="audio-bar"></div>
+                        </div>
+                        <div class="audio-status" id="audio-status">Silent</div>
+                    </div>
+                </aside>
+
+                <!-- Question Area -->
+                <main class="question-area">
+                    <div class="question-nav">
+                        <span>Question <strong id="current-q">1</strong> of <strong id="total-q">5</strong></span>
+                        <div class="q-indicators" id="q-indicators"></div>
+                    </div>
+
+                    <div class="question-card" id="question-card">
+                        <!-- Question content loaded dynamically -->
+                    </div>
+
+                    <div class="answer-area">
+                        <textarea id="answer-input" placeholder="Type your answer here..."></textarea>
+                        <div class="typing-stats">
+                            <span id="typing-speed">0 WPM</span>
+                            <span id="char-count">0 characters</span>
+                        </div>
+                    </div>
+
+                    <div class="question-controls">
+                        <button id="prev-btn" class="nav-btn" disabled>← Previous</button>
+                        <button id="next-btn" class="nav-btn">Next →</button>
+                    </div>
+                </main>
+
+                <!-- Activity Log Sidebar -->
+                <aside class="log-sidebar">
+                    <h3>📋 Activity Log</h3>
+                    <div class="log-container" id="activity-log">
+                        <!-- Logs will be added here -->
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <!-- Warning Modal -->
+        <div class="warning-modal" id="warning-modal">
+            <div class="warning-content">
+                <div class="warning-icon-large">⚠️</div>
+                <h2 id="warning-title">Warning!</h2>
+                <p id="warning-message">Suspicious activity detected.</p>
+                <button id="dismiss-warning" class="primary-btn">I Understand</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Oral Verification Screen -->
+    <div id="verification-screen" class="screen">
+        <div class="verification-container">
+            <div class="verification-header">
+                <h1>🎤 Oral Verification</h1>
+                <p>Please answer the following questions verbally to verify your understanding</p>
+            </div>
+
+            <div class="verification-camera">
+                <video id="verification-video" autoplay playsinline></video>
+                <canvas id="verification-canvas"></canvas>
+            </div>
+
+            <div class="verification-question" id="verification-question">
+                <div class="v-question-number">Question 1 of 3</div>
+                <div class="v-question-text" id="v-question-text"></div>
+            </div>
+
+            <div class="recording-status" id="recording-status">
+                <div class="recording-indicator"></div>
+                <span>Recording your response...</span>
+            </div>
+
+            <div class="transcript-area">
+                <h3>Your Response (Transcript)</h3>
+                <div id="transcript-output" class="transcript-box"></div>
+            </div>
+
+            <div class="verification-controls">
+                <button id="start-speaking" class="primary-btn">
+                    <span>🎙️</span> Start Speaking
+                </button>
+                <button id="next-v-question" class="nav-btn" style="display:none;">
+                    Next Question →
+                </button>
+                <button id="complete-verification" class="submit-btn" style="display:none;">
+                    Complete Verification
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="results-screen" class="screen">
+        <div class="results-container">
+            <div class="results-header">
+                <div class="result-icon">✅</div>
+                <h1>Exam Completed</h1>
+                <p>Your submission has been recorded</p>
+            </div>
+
+            <div class="results-summary">
+                <h2>Proctoring Summary</h2>
+                <div class="summary-grid" id="summary-grid">
+                    <!-- Summary stats will be populated here -->
+                </div>
+            </div>
+
+            <div class="integrity-score">
+                <h2>Integrity Score</h2>
+                <div class="score-circle" id="score-circle">
+                    <span id="integrity-score">--</span>
+                </div>
+                <p id="score-message"></p>
+            </div>
+
+            <div class="warning-log-summary">
+                <h3>Warning Events</h3>
+                <div id="warning-log-summary" class="warning-log-list">
+                    <!-- Warning summary will be populated -->
+                </div>
+            </div>
+
+            <button id="restart-btn" class="primary-btn">Start New Exam</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
